@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽盲盒名著快问快答</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            color: #f0e6d2;
+            /* 背景图片 - 替换为 ./magic_background.jpg */
+            background-image: url('./magic_background.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #f8c537;
+            text-shadow: 2px 2px 4px #000;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        /* 宝盒容器 */
+        .boxes-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+            max-width: 1300px;
+        }
+        
+        /* 宝盒样式 */
+        .treasure-box {
+            width: 300px;
+            height: 200px;
+            /* 关闭的宝盒图片 - 替换为 ./closed_box.png */
+            background-image: url('./closed_box.png');
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+        }
+        
+        .treasure-box:hover {
+            transform: scale(1.05);
+        }
+        
+        .treasure-box.open {
+            /* 打开的宝盒图片 - 替换为 ./open_box.png */
+            background-image: url('./open_box.png');
+        }
+        
+        /* 问题文本框 */
+        .question-container {
+            width: 80%;
+            max-width: 1000px;
+            min-height: 150px;
+            background-color: rgba(240, 230, 210, 0.9);
+            color: #1a2a3a;
+            border-radius: 10px;
+            margin: 30px auto;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: none;
+        }
+        
+        /* 计数器 */
+        .counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+            color: #f8c537;
+            text-shadow: 1px 1px 2px #000;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        /* 提示文字 */
+        .hint {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #f8c537;
+            text-shadow: 1px 1px 2px #000;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>抽盲盒名著快问快答</h1>
+    
+    <div class="counter">已答题数: <span id="counter">0</span></div>
+    
+    <div class="boxes-container">
+        <!-- 四个宝盒 -->
+        <div class="treasure-box" data-index="0"></div>
+        <div class="treasure-box" data-index="1"></div>
+        <div class="treasure-box" data-index="2"></div>
+        <div class="treasure-box" data-index="3"></div>
+    </div>
+    
+    <div class="question-container" id="question-container"></div>
+    
+    <div class="hint">
+        <p>点击任意宝盒开始游戏，点击问题查看答案，点击答案重置游戏</p>
+    </div>
+
+    <script>
+        // 题目数据 - 合并所有题目
+        const questions = [
+            // 哈利·波特题目
+            {q: "哈利·波特的父母分别叫什么名字？", a: "詹姆·波特、莉莉·波特"},
+            {q: "哈利·波特的伤疤形状是什么？", a: "闪电形"},
+            {q: "赫敏·格兰杰的父母是什么职业？", a: "牙医"},
+            {q: "罗恩·韦斯莱的宠物老鼠叫什么？", a: "斑斑"},
+            {q: "伏地魔的原名是什么？", a: "汤姆·马沃罗·里德尔"},
+            {q: "霍格沃茨的校长是谁？", a: "阿不思·邓布利多，后有西弗勒斯·斯内普等"},
+            {q: "德拉科·马尔福的父亲叫什么？", a: "卢修斯·马尔福"},
+            {q: "海格的宠物蜘蛛叫什么？", a: "阿拉戈克"},
+            {q: "疯眼汉穆迪的真名叫什么？", a: "阿拉斯托·穆迪"},
+            {q: "多比的主人最初是谁？", a: "卢修斯·马尔福"},
+            {q: "卢娜·洛夫古德的标志性配饰是什么？", a: "黄油啤酒瓶塞做成的项链"},
+            {q: "小天狼星·布莱克是哈利的什么人？", a: "教父"},
+            {q: "奇洛教授的后脑勺上附着的是谁？", a: "伏地魔"},
+            {q: "麦格教授能变成什么动物？", a: "猫"},
+            {q: "唐克斯所属的魔法家族擅长什么魔法？", a: "易容马格斯"},
+            {q: "弗雷德和乔治·韦斯莱创办的商店叫什么名字？", a: "韦斯莱魔法把戏坊"},
+            {q: "贝拉特里克斯是卢修斯·马尔福的什么关系？", a: "表妹"},
+            {q: "卢平教授是什么特殊身份？", a: "狼人"},
+            {q: "纳西莎·马尔福是德拉科的谁？", a: "母亲"},
+            {q: "克利切最初是谁的家养小精灵？", a: "小天狼星的母亲沃尔布加·布莱克"},
+            
+            // 红楼梦题目
+            {q: "《红楼梦》里，宝玉出生时嘴里含着什么神奇的东西？", a: "通灵宝玉"},
+            {q: "林黛玉的妈妈叫什么名字？", a: "贾敏"},
+            {q: "大家叫她'凤辣子'的人是谁？", a: "王熙凤"},
+            {q: "宝玉的爸爸叫什么名字？", a: "贾政"},
+            {q: "薛宝钗的哥哥叫什么？", a: "薛蟠"},
+            {q: "《红楼梦》原来还有一个名字叫什么？", a: "《石头记》"},
+            {q: "宝玉住的院子叫什么名字？", a: "怡红院"},
+            {q: "黛玉住的地方种满了竹子，那个院子叫什么？", a: "潇湘馆"},
+            {q: "宝玉做错事被爸爸打，主要是因为哪两件事？", a: "和琪官交往被追查、被贾环诬陷强奸金钏致其投井"},
+            {q: "特别疼爱宝玉和众姐妹的老奶奶是谁？", a: "祖母/贾母"},
+            
+            // 水浒传题目
+            {q: "《水浒传》中梁山好汉共有多少位？", a: "108位"},
+            {q: "梁山寨主先后共有几位？分别是谁？", a: "三位，王伦、晁盖、宋江"},
+            {q: "《水浒传》的作者是谁？", a: "施耐庵"},
+            {q: "绰号'及时雨'的梁山好汉是谁？", a: "宋江"},
+            {q: "在景阳冈打虎的英雄是谁？", a: "武松"},
+            {q: "林冲原是什么官职？", a: "八十万禁军枪棒教头"},
+            {q: "鲁智深的绰号是什么？", a: "花和尚"},
+            {q: "吴用的绰号是什么？他有什么本领？", a: "智多星，足智多谋，擅长出谋划策"},
+            {q: "李逵的绰号是什么？他使用的兵器是什么？", a: "黑旋风，两把板斧"},
+            {q: "'母大虫'指的是哪位梁山女将？", a: "顾大嫂"}
+        ];
+
+        // 获取DOM元素
+        const boxes = document.querySelectorAll('.treasure-box');
+        const questionContainer = document.getElementById('question-container');
+        const counter = document.getElementById('counter');
+
+        // 初始化变量
+        let currentQuestionIndex = -1;
+        let answeredCount = 0;
+        let isShowingAnswer = false;
+        let usedQuestionIndices = [];
+
+        // 更新计数器
+        function updateCounter() {
+            counter.textContent = answeredCount;
+        }
+
+        // 重置游戏状态
+        function resetGame() {
+            // 关闭所有宝盒
+            boxes.forEach(box => {
+                box.classList.remove('open');
+            });
+            
+            // 隐藏问题容器
+            questionContainer.style.display = 'none';
+            
+            isShowingAnswer = false;
+            
+            // 如果所有题目都用过了，重置已用题目列表
+            if (usedQuestionIndices.length >= questions.length) {
+                usedQuestionIndices = [];
+            }
+        }
+
+        // 获取随机未使用的问题
+        function getRandomQuestion() {
+            let availableIndices = [];
+            for (let i = 0; i < questions.length; i++) {
+                if (!usedQuestionIndices.includes(i)) {
+                    availableIndices.push(i);
+                }
+            }
+            
+            if (availableIndices.length === 0) {
+                // 所有题目都用过了，重置
+                usedQuestionIndices = [];
+                availableIndices = [...Array(questions.length).keys()];
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableIndices.length);
+            const questionIndex = availableIndices[randomIndex];
+            usedQuestionIndices.push(questionIndex);
+            return questionIndex;
+        }
+
+        // 显示问题
+        function showQuestion() {
+            currentQuestionIndex = getRandomQuestion();
+            questionContainer.textContent = questions[currentQuestionIndex].q;
+            questionContainer.style.display = 'flex';
+            isShowingAnswer = false;
+        }
+
+        // 显示答案
+        function showAnswer() {
+            if (currentQuestionIndex === -1) return;
+            
+            questionContainer.textContent = questions[currentQuestionIndex].a;
+            isShowingAnswer = true;
+            answeredCount++;
+            updateCounter();
+        }
+
+        // 事件监听
+        boxes.forEach(box => {
+            box.addEventListener('click', function() {
+                // 如果已经有打开的宝盒或者是显示答案状态，则忽略点击
+                if (document.querySelector('.treasure-box.open') || isShowingAnswer) return;
+                
+                // 打开当前宝盒
+                this.classList.add('open');
+                
+                // 显示问题
+                showQuestion();
+            });
+        });
+        
+        questionContainer.addEventListener('click', function() {
+            if (currentQuestionIndex === -1) return;
+            
+            if (!isShowingAnswer) {
+                // 显示答案
+                showAnswer();
+            } else {
+                // 重置游戏
+                resetGame();
+            }
+        });
+
+        // 初始化
+        updateCounter();
+    </script>
+</body>
+</html>
